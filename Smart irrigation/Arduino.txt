@@ -1,0 +1,71 @@
+int sensor_pin = A0;
+int pump = 8;
+int output_value;
+String input;
+bool pumpState = false;
+bool autoMode = false;
+int threshold = 40;
+unsigned long lastAutoCheck = 0;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(sensor_pin, INPUT);
+  pinMode(pump, OUTPUT);
+  digitalWrite(pump, HIGH);  // Start with pump OFF
+  Serial.println("Arduino Ready");
+}
+
+void loop() {
+  // Always process serial commands first
+  if (Serial.available()) {
+    input = Serial.readStringUntil('\n');
+    input.trim();
+
+    if (input == "READ") {
+      output_value = analogRead(sensor_pin);
+      output_value = map(output_value, 550, 0, 0, 100);
+      Serial.println(output_value);
+
+    } else if (input == "PUMP_ON") {
+      pumpState = true;
+      autoMode = false;
+      digitalWrite(pump, LOW);
+      Serial.println("Pump turned ON (Manual)");
+
+    } else if (input == "PUMP_OFF") {
+      pumpState = false;
+      autoMode = false;
+      digitalWrite(pump, HIGH);
+      Serial.println("Pump turned OFF (Manual)");
+
+    } else if (input == "AUTO_ON") {
+      autoMode = true;
+      Serial.println("Auto mode enabled");
+
+    } else if (input == "AUTO_OFF") {
+      autoMode = false;
+      // FIX: Always turn off pump when switching to manual
+      pumpState = false;
+      digitalWrite(pump, HIGH);
+      Serial.println("Auto mode disabled, Pump OFF");
+    }
+  }
+
+  // Auto-mode logic (non-blocking)
+  if (autoMode && millis() - lastAutoCheck > 3000) {
+    // FIX: Always read sensor in auto mode
+    output_value = analogRead(sensor_pin);
+    output_value = map(output_value, 550, 0, 0, 100);
+    
+    if (output_value < threshold && !pumpState) {
+      digitalWrite(pump, LOW);
+      pumpState = true;
+      Serial.println("Auto: Pump ON");
+    } else if (output_value >= threshold && pumpState) {
+      digitalWrite(pump, HIGH);
+      pumpState = false;
+      Serial.println("Auto: Pump OFF");
+    }
+    lastAutoCheck = millis();
+  }
+}

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Irrigation Dashboard</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 250px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            color: green;
+            margin: 0 0 10px 0;
+        }
+        .card h1 {
+            font-size: 40px;
+            margin: 0;
+        }
+        .description {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        .status-dot {
+            height: 12px;
+            width: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .on { background-color: green; }
+        .off { background-color: red; }
+        .btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #218838;
+        }
+        .alert {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Soil Moisture Card -->
+        <div class="card">
+            <h3>Soil Moisture</h3>
+            <h1 id="moisture">--%</h1>
+            <div class="description">Current moisture level in soil. Ideal: 50% for optimal irrigation.</div>
+        </div>
+
+        <!-- Irrigation Control Card -->
+        <div class="card">
+            <h3>Irrigation Control</h3>
+            <p>Status: <span class="status-dot" id="status-dot"></span> <span id="pump-status">--</span></p>
+            <button class="btn" onclick="toggleIrrigation()">Toggle Irrigation</button>
+            <div class="alert" id="pump-alert">Auto mode is active - disable auto mode to control manually</div>
+        </div>
+
+        <!-- Auto Mode Control Card -->
+        <div class="card">
+            <h3>Auto Mode</h3>
+            <p>Mode: <span id="auto-mode-text">--</span></p>
+            <button class="btn" onclick="toggleAutoMode()">Toggle Mode</button>
+        </div>
+    </div>
+
+    <p style="text-align:center; margin-top: 20px;">Real-time sensor data & irrigation control.</p>
+
+    <script>
+        function fetchMoisture() {
+            fetch('/moisture')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('moisture').innerText = data.data + '%';
+                })
+                .catch(error => {
+                    console.error('Moisture error:', error);
+                });
+        }
+
+        function fetchPumpStatus() {
+            fetch('/pump')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        // Show alert when auto mode is active
+                        document.getElementById('pump-alert').style.display = 'block';
+                    } else {
+                        const status = data.status;
+                        document.getElementById('pump-status').innerText = 
+                            (status === 'on') ? 'Irrigation is ON' : 'Irrigation is OFF';
+                        document.getElementById('status-dot').className = 'status-dot ' + 
+                            (status === 'on' ? 'on' : 'off');
+                        document.getElementById('pump-alert').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Pump status error:', error);
+                });
+        }
+
+        function toggleIrrigation() {
+            fetch('/pump', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            }).then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        alert(data.error); // Show error message
+                    });
+                }
+                return response.json();
+            }).then(() => {
+                setTimeout(fetchPumpStatus, 500);
+            });
+        }
+
+        function fetchAutoMode() {
+            fetch('/auto_mode')
+                .then(res => res.json())
+                .then(data => {
+                    const mode = data.auto_mode ? 'Auto' : 'Manual';
+                    document.getElementById('auto-mode-text').innerText = mode;
+                    
+                    // Refresh pump status after mode change
+                    setTimeout(fetchPumpStatus, 300);
+                })
+                .catch(error => {
+                    console.error('Auto mode error:', error);
+                });
+        }
+
+        function toggleAutoMode() {
+            fetch('/auto_mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            }).then(() => {
+                // Refresh all statuses after mode change
+                setTimeout(() => {
+                    fetchAutoMode();
+                    fetchPumpStatus();
+                    fetchMoisture();
+                }, 500);
+            });
+        }
+
+        // Initialize with faster refresh rate
+        setInterval(fetchMoisture, 2000);
+        setInterval(fetchPumpStatus, 2000);
+        setInterval(fetchAutoMode, 3000);
+
+        // Initial fetch
+        fetchMoisture();
+        fetchPumpStatus();
+        fetchAutoMode();
+    </script>
+</body>
+</html>

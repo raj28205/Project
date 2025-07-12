@@ -1,0 +1,171 @@
+from flask import Flask, render_template, request, redirect, session, jsonify
+import sqlite3
+import os
+import serial
+import serial.tools.list_ports
+import time
+
+app = Flask(__name__)
+app.secret_key = 'super_secret_key'
+
+pump_status = "off"
+auto_mode_status = False  # Track Auto mode
+moisture_value = 0
+
+# ---------- Arduino Connection ----------
+def find_arduino_port():
+    ports = serial.tools.list_ports.comports()
+    for port in ports:
+        if 'ttyUSB' in port.device or 'ttyACM' in port.device:
+            return port.device
+    return None
+
+arduino_port = find_arduino_port()
+if arduino_port is None:
+    print("? Arduino not found.")
+    arduino = None
+else:
+    try:
+        arduino = serial.Serial(arduino_port, 9600, timeout=1)
+        time.sleep(2)
+        print(f"? Arduino connected at {arduino_port}")
+    except Exception as e:
+        print(f"? Arduino connection error: {e}")
+        arduino = None
+
+def init_db():
+    if not os.path.exists('users.db'):
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute('''CREATE TABLE users (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT UNIQUE NOT NULL,
+                        password TEXT NOT NULL
+                    )''')
+        conn.commit()
+        conn.close()
+        print("? users.db created")
+
+# ---------- Routes ----------
+@app.route('/')
+def home():
+    return redirect('/login')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
+        user = c.fetchone()
+        conn.close()
+        if user:
+            session['user'] = email
+            return redirect('/index')
+        else:
+            return render_template('login.html', error="Invalid email or password")
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        try:
+            conn = sqlite3.connect('users.db')
+            c = conn.cursor()
+            c.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, password))
+            conn.commit()
+            conn.close()
+            return redirect('/login')
+        except sqlite3.IntegrityError:
+            return render_template('register.html', error="Email already exists")
+    return render_template('register.html')
+
+@app.route('/index')
+def index():
+    if 'user' not in session:
+        return redirect('/login')
+    return render_template('index.html', email=session['user'])
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/login')
+
+@app.route('/moisture')
+def moisture():
+    if 'user' not in session:
+        return jsonify({"data": "Unauthorized"}), 401
+    if not arduino:
+        return jsonify({"data": "Arduino not connected"}), 500
+    try:
+        arduino.write(b"READ\n")
+        data = arduino.readline().decode().strip()
+        return jsonify({"data": data})
+    except Exception:
+        return jsonify({"data": "Error reading sensor"}), 500
+
+@app.route('/pump', methods=['GET', 'POST'])
+def pump():
+    global pump_status, auto_mode_status
+    if 'user' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    if not arduino:
+        return jsonify({"error": "Arduino not connected"}), 500
+
+    if auto_mode_status:
+        return jsonify({"error": "Auto mode is enabled"}), 400
+
+    if request.method == 'POST':
+        new_status = "off" if pump_status == "on" else "on"
+        command = b"PUMP_ON\n" if new_status == "on" else b"PUMP_OFF\n"
+        try:
+            arduino.write(command)
+            time.sleep(0.2)
+            pump_status = new_status
+            print(f"Pump is now: {pump_status}")
+        except:
+            return jsonify({"error": "Pump command failed"}), 500
+        return jsonify({"status": pump_status})
+
+    return jsonify({"status": pump_status})
+
+@app.route('/auto_mode', methods=['GET', 'POST'])
+def auto_mode():
+    global auto_mode_status, pump_status
+    if 'user' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    if not arduino:
+        return jsonify({"error": "Arduino not connected"}), 500
+
+    if request.method == 'POST':
+        new_auto_mode = not auto_mode_status
+        
+        # Turn off pump when switching from auto to manual
+        if not new_auto_mode and auto_mode_status:
+            pump_status = "off"
+            try:
+                arduino.write(b"PUMP_OFF\n")
+                time.sleep(0.2)
+                print("Pump turned OFF during auto mode switch")
+            except:
+                print("Failed to turn off pump during mode switch")
+        
+        command = b"AUTO_ON\n" if new_auto_mode else b"AUTO_OFF\n"
+        try:
+            arduino.write(command)
+            time.sleep(0.2)
+            auto_mode_status = new_auto_mode
+            print(f"Auto mode is now {'ON' if auto_mode_status else 'OFF'}")
+        except:
+            return jsonify({"error": "Failed to toggle auto mode"}), 500
+        return jsonify({"auto_mode": auto_mode_status})
+
+    return jsonify({"auto_mode": auto_mode_status})
+
+if __name__ == '__main__':
+    init_db()
+    app.run(host='0.0.0.0', port=5000, debug=True)
