@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EV Charging Location Checker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ EV Charging Station Suitability Checker</h1>
+
+    <form id="evForm">
+      <label>Latitude:
+        <input type="number" step="0.0001" id="lat" placeholder="e.g. 19.0760" required />
+      </label>
+
+      <label>Longitude:
+        <input type="number" step="0.0001" id="lon" placeholder="e.g. 72.8777" required />
+      </label>
+
+      <label>Power Output (kW):
+        <input type="number" id="power" placeholder="e.g. 50" required />
+      </label>
+
+      <label>Number of Connectors:
+        <input type="number" id="connectors" placeholder="e.g. 4" required />
+      </label>
+
+      <label>Traffic Density:
+        <input type="number" step="0.1" id="traffic" placeholder="e.g. 7.5" required />
+      </label>
+
+      <label>EV Adoption Rate (%):
+        <input type="number" step="0.1" id="evRate" placeholder="e.g. 12.5" required />
+      </label>
+
+      <label>Population Density:
+        <input type="number" id="popDensity" placeholder="e.g. 1500" required />
+      </label>
+
+      <label>Renewable Energy Share (%):
+        <input type="number" step="0.1" id="renewable" placeholder="e.g. 30.0" required />
+      </label>
+
+      <button type="submit">Check Suitability</button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
