@@ -1,0 +1,14 @@
+EMNIST Dataset (TensorFlow Datasets)
+https://www.nist.gov/itl/products-and-services/emnist-dataset
+It is a collection of 814,255 characters of handwritten text, where the EMNIST Letters subset focuses on capital letters (A-Z).
+
+The EMNIST ByClass split contains: 
+1. 62 classes: 
+• 10 digits (0–9) 
+• 26 uppercase letters (A–Z) 
+• 26 lowercase letters (a–z) 
+2. Total samples: Over 814,000 labeled grayscale 
+images. 
+• Training set: ~697,932 images 
+• Test set: ~116,323 images 
+3. Image size: Each image is 28x28 pixels, grayscale.
