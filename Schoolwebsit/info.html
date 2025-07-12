@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Faculty Profiles</title>
+  <link rel="stylesheet"href="css/info.css">
+</head>
+<body>
+
+  <h1>Meet Our Faculty</h1>
+
+  <div class="faculty-container">
+    <!-- Faculty Card 1 -->
+    <div class="faculty-card">
+      <img src="images/1.jpeg" alt="Faculty Photo" class="faculty-photo">
+      <div class="faculty-content">
+        <div class="faculty-name">બકુલાબેન ચીમનભાઈ ચૌધરી </div>
+        <div class="faculty-title">બી.એ.બી.એડ. </div>
+        <p class="faculty-description">Discription</p>
+        <button class="show-more" onclick="toggleDescription(this)">More Info</button>
+      </div>
+    </div>
+
+    <!-- Faculty Card 2 -->
+    <div class="faculty-card">
+      <img src="images/1.jpeg" alt="Faculty Photo" class="faculty-photo">
+      <div class="faculty-content">
+        <div class="faculty-name">હિનાબેન દિનુભાઈ પ્રજાપતિ    </div>
+        <div class="faculty-title">એમ.એ.ડી.બી.એડ</div>
+        <p class="faculty-description">Discription</p>
+        <button class="show-more" onclick="toggleDescription(this)">More Info</button>
+      </div>
+    </div>
+
+    <!-- Faculty Card 3 -->
+    <div class="faculty-card">
+      <img src="images/1.jpeg" alt="Faculty Photo" class="faculty-photo">
+      <div class="faculty-content">
+        <div class="faculty-name">મયુરભાઈ મોહનભાઈ પટેલ </div>
+        <div class="faculty-title">એમ.એસ.સી.બી.એડ</div>
+        <p class="faculty-description">Discription</p>
+        <button class="show-more" onclick="toggleDescription(this)">More Info</button>
+      </div>
+    </div>
+    <!-- Faculty Card 4 -->
+    <div class="faculty-card">
+      <img src="images/1.jpeg" alt="Faculty Photo" class="faculty-photo">
+      <div class="faculty-content">
+        <div class="faculty-name">મહેન્દ્રકુમાર ઠાકોરભાઈ પટેલ</div>
+        <div class="faculty-title">બી.એસ.સી.ડી.બી.એડ</div>
+        <p class="faculty-description">Discription</p>
+        <button class="show-more" onclick="toggleDescription(this)">More Info</button>
+      </div>
+    </div>
+    <!-- Faculty Card 5 -->
+    <div class="faculty-card">
+      <img src="images/1.jpeg" alt="Faculty Photo" class="faculty-photo">
+      <div class="faculty-content">
+        <div class="faculty-name">મહેન્દ્રભાઈ નસવાનભાઈ ચૌધરી</div>
+        <div class="faculty-title">બી.કોમ</div>
+        <p class="faculty-description">Discription</p>
+        <button class="show-more" onclick="toggleDescription(this)">More Info</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function toggleDescription(button) {
+      const desc = button.previousElementSibling;
+      if (desc.style.display === "block") {
+        desc.style.display = "none";
+        button.textContent = "More Info";
+      } else {
+        desc.style.display = "block";
+        button.textContent = "Less Info";
+      }
+    }
+  </script>
+
+</body>
+</html>
